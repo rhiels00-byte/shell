@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+
+# Large files
+Visual Studio Code.app/
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Environment files
+.env
+.env.local
