@@ -1,6 +1,0 @@
-{
-  "buildCommand": "cd uiux && npm install && npm run build",
-  "outputDirectory": "uiux/dist",
-  "devCommand": "cd uiux && npm run dev",
-  "installCommand": "cd uiux && npm install"
-}
