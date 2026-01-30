@@ -1,0 +1,44 @@
+{
+  "version": "1.0.0",
+  "tools": [
+    {
+      "id": "expected-questions-generator",
+      "name": "예상 질문 리스트 만들기",
+      "description": "학생들이 물어볼만한 예상 질문과 답변을 생성합니다",
+      "icon": "❓",
+      "category": "create",
+      "version": "1.0.0",
+      "author": "팀원A",
+      "enabled": true,
+      "path": "../tools/tool-expected-questions",
+      "component": "ExpectedQuestionsGenerator",
+      "route": "/tool/expected-questions-generator"
+    },
+    {
+      "id": "quiz-generator",
+      "name": "퀴즈 생성기",
+      "description": "단원과 난이도에 맞는 퀴즈를 자동으로 생성합니다",
+      "icon": "📝",
+      "category": "create",
+      "version": "1.0.0",
+      "author": "팀원B",
+      "enabled": true,
+      "path": "../tools/tool-quiz-generator",
+      "component": "QuizGenerator",
+      "route": "/tool/quiz-generator"
+    },
+    {
+      "id": "worksheet-generator",
+      "name": "학습지 생성기",
+      "description": "맞춤형 학습지를 빠르게 제작합니다",
+      "icon": "📄",
+      "category": "create",
+      "version": "1.0.0",
+      "author": "팀원C",
+      "enabled": true,
+      "path": "../tools/tool-worksheet-generator",
+      "component": "WorksheetGenerator",
+      "route": "/tool/worksheet-generator"
+    }
+  ]
+}

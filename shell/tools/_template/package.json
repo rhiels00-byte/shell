@@ -1,0 +1,14 @@
+{
+  "name": "tool-template",
+  "version": "1.0.0",
+  "description": "새 도구를 만들 때 사용하는 템플릿",
+  "type": "module",
+  "author": "Your Name",
+  "license": "MIT",
+  "main": "src/ToolTemplate.tsx",
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.1"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "tool-quiz-generator",
+  "version": "1.0.0",
+  "description": "단원과 난이도에 맞는 퀴즈를 자동으로 생성하는 도구",
+  "type": "module",
+  "author": "팀원B",
+  "license": "MIT",
+  "main": "src/QuizGenerator.tsx",
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.1"
+  }
+}

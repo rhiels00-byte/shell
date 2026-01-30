@@ -1,0 +1,14 @@
+{
+  "name": "tool-expected-questions",
+  "version": "1.0.0",
+  "description": "학생들이 물어볼만한 예상 질문과 답변을 생성하는 도구",
+  "type": "module",
+  "author": "팀원A",
+  "license": "MIT",
+  "main": "src/ExpectedQuestionsGenerator.tsx",
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.1"
+  }
+}

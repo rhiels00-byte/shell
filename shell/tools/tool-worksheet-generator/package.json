@@ -1,0 +1,14 @@
+{
+  "name": "tool-worksheet-generator",
+  "version": "1.0.0",
+  "description": "맞춤형 학습지를 빠르게 제작하는 도구",
+  "type": "module",
+  "author": "팀원C",
+  "license": "MIT",
+  "main": "src/WorksheetGenerator.tsx",
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.1"
+  }
+}
