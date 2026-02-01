@@ -36,6 +36,14 @@ interface AnalysisResult {
   studentSummary: string;
   recordGuide: string;
   generatedAt: string;
+  cost?: CostInfo;
+}
+
+interface CostInfo {
+  usd: number;
+  inputTokens: number;
+  outputTokens: number;
+  model: string;
 }
 
 const defaultInput: InputData = {
@@ -122,7 +130,7 @@ const requestAnalysis = async (input: InputData): Promise<AnalysisResult> => {
   return response.json();
 };
 
-const requestMappings = async (input: InputData): Promise<FileMapping[]> => {
+const requestMappings = async (input: InputData): Promise<{ mappings: FileMapping[]; cost?: CostInfo } | FileMapping[]> => {
   const apiBase = import.meta.env.VITE_IRISA_API_BASE || import.meta.env.VITE_API_BASE;
   if (!apiBase) {
     return input.mappings.map((m, idx) => ({
@@ -160,6 +168,7 @@ export default function IrisaAnalyzer() {
   );
   const [error, setError] = useState<string | null>(null);
   const [mappingLoading, setMappingLoading] = useState(false);
+  const [costInfo, setCostInfo] = useState<CostInfo | null>(null);
 
   const analysisFileLabel = useMemo(
     () => toFileLabel(input.analysisFiles),
@@ -178,6 +187,7 @@ export default function IrisaAnalyzer() {
     try {
       const response = await requestAnalysis(input);
       setResult(response);
+      if (response.cost) setCostInfo(response.cost);
     } catch (err) {
       setError('분석 요청에 실패했습니다. 목업 결과로 대체합니다.');
       setResult(createMockResult(input));
@@ -190,8 +200,13 @@ export default function IrisaAnalyzer() {
     setMappingLoading(true);
     setError(null);
     try {
-      const mappings = await requestMappings(input);
-      setInput({ ...input, mappings });
+      const response = await requestMappings(input);
+      if (Array.isArray(response)) {
+        setInput({ ...input, mappings: response });
+      } else {
+        setInput({ ...input, mappings: response.mappings });
+        if (response.cost) setCostInfo(response.cost);
+      }
     } catch (err) {
       setError('매핑 자동 감지에 실패했습니다. 수동으로 확인해 주세요.');
     } finally {
@@ -644,10 +659,23 @@ export default function IrisaAnalyzer() {
     </div>
   );
 
+  const showCost = import.meta.env.VITE_SHOW_INTERNAL_COST === 'true';
+  const costLabel =
+    costInfo && showCost
+      ? `≈ $${costInfo.usd.toFixed(4)} · in ${costInfo.inputTokens} / out ${costInfo.outputTokens}`
+      : null;
+
   return (
     <ToolExecutionLayout
       toolId="irisa-analyzer"
       toolName="이리사 종합 분석기"
+      titleAddon={
+        showCost ? (
+          <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+            {costLabel || '비용 대기중'}
+          </span>
+        ) : null
+      }
       inputComponent={InputComponent}
       outputComponent={OutputComponent}
       onSave={handleSave}

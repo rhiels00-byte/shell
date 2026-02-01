@@ -55,6 +55,23 @@ const loadPromptBundle = () => {
 
 const client = process.env.OPENAI_API_KEY ? new OpenAI() : null;
 
+const MODEL_PRICING = {
+  'gpt-4.1-mini': { input: 0.4, output: 1.6 },
+  'gpt-4.1': { input: 2.0, output: 8.0 },
+  'gpt-4.1-nano': { input: 0.1, output: 0.4 },
+};
+
+const estimateCost = ({ model, usage }) => {
+  if (!usage) return { usd: 0, inputTokens: 0, outputTokens: 0, model };
+  const pricing = MODEL_PRICING[model] || MODEL_PRICING['gpt-4.1-mini'];
+  const inputTokens = usage.input_tokens || usage.input_tokens_total || 0;
+  const outputTokens = usage.output_tokens || usage.output_tokens_total || 0;
+  const usd =
+    (inputTokens / 1_000_000) * pricing.input +
+    (outputTokens / 1_000_000) * pricing.output;
+  return { usd, inputTokens, outputTokens, model: model || 'gpt-4.1-mini' };
+};
+
 const buildPayloadSummary = ({ payload, analysisFiles, referenceFiles }) => {
   const fileMeta = (files) =>
     files.map((file) => ({
@@ -108,15 +125,16 @@ app.post('/api/mappings', async (req, res) => {
   const { students, files } = req.body || {};
 
   if (!client) {
-    return res.json(heuristicMappings({ students, files }));
+    return res.json({ mappings: heuristicMappings({ students, files }), cost: { usd: 0, inputTokens: 0, outputTokens: 0, model: 'mock' } });
   }
 
   const promptBundle = loadPromptBundle();
   const mappingPrompt = `너는 업로드된 파일과 학생 정보를 보고 자동 매핑을 생성한다.\n반드시 JSON 배열만 출력한다.\n각 항목 형식: {"fileId": string, "fileName": string, "studentIndex": number|null, "unit": "전체"|"페이지"|"구간"|"행/표", "range": string}`;
 
   try {
+    const model = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
     const response = await client.responses.create({
-      model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
+      model,
       input: [
         { role: 'system', content: promptBundle + '\n\n' + mappingPrompt },
         {
@@ -128,15 +146,16 @@ app.post('/api/mappings', async (req, res) => {
 
     const text = response.output_text || '';
     const parsed = JSON.parse(text);
+    const cost = estimateCost({ model, usage: response.usage });
 
     if (!Array.isArray(parsed)) {
-      return res.json(heuristicMappings({ students, files }));
+      return res.json({ mappings: heuristicMappings({ students, files }), cost });
     }
 
-    return res.json(parsed);
+    return res.json({ mappings: parsed, cost });
   } catch (error) {
     console.error(error);
-    return res.json(heuristicMappings({ students, files }));
+    return res.json({ mappings: heuristicMappings({ students, files }), cost: { usd: 0, inputTokens: 0, outputTokens: 0, model: 'fallback' } });
   }
 });
 
@@ -152,15 +171,16 @@ app.post(
     const payload = req.body?.payload ? JSON.parse(req.body.payload) : {};
 
     if (!client) {
-      return res.json(mockResponse({ payload, analysisFiles, referenceFiles }));
+      return res.json({ ...mockResponse({ payload, analysisFiles, referenceFiles }), cost: { usd: 0, inputTokens: 0, outputTokens: 0, model: 'mock' } });
     }
 
     const promptBundle = loadPromptBundle();
     const summary = buildPayloadSummary({ payload, analysisFiles, referenceFiles });
 
     try {
+      const model = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
       const response = await client.responses.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
+        model,
         input: [
           {
             role: 'system',
@@ -182,15 +202,17 @@ app.post(
       const text = response.output_text || '';
       const parsed = JSON.parse(text);
 
+      const cost = estimateCost({ model, usage: response.usage });
       return res.json({
         teacherSummary: parsed.teacherSummary ?? '',
         studentSummary: parsed.studentSummary ?? '',
         recordGuide: parsed.recordGuide ?? '',
         generatedAt: new Date().toISOString(),
+        cost,
       });
     } catch (error) {
       console.error(error);
-      return res.json(mockResponse({ payload, analysisFiles, referenceFiles }));
+      return res.json({ ...mockResponse({ payload, analysisFiles, referenceFiles }), cost: { usd: 0, inputTokens: 0, outputTokens: 0, model: 'fallback' } });
     }
   }
 );

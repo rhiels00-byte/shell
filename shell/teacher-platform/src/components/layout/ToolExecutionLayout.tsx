@@ -6,6 +6,7 @@ import Button from '../common/Button';
 interface ToolExecutionLayoutProps {
   toolId: string;
   toolName: string;
+  titleAddon?: ReactNode;
   inputComponent: ReactNode;
   outputComponent: ReactNode;
   onSave: (type: 'download' | 'copy' | 'archive') => void;
@@ -14,6 +15,7 @@ interface ToolExecutionLayoutProps {
 
 export default function ToolExecutionLayout({
   toolName,
+  titleAddon,
   inputComponent,
   outputComponent,
   onSave,
@@ -40,7 +42,10 @@ export default function ToolExecutionLayout({
             >
               ← 뒤로
             </button>
-            <h1 className="text-2xl font-bold text-gray-900">{toolName}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-gray-900">{toolName}</h1>
+              {titleAddon}
+            </div>
           </div>
 
           {/* 저장 옵션 드롭다운 */}
