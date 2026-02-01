@@ -23,9 +23,9 @@
 - 저장소: `https://github.com/rhiels00-byte/shell`
 - 브랜치: `main` (배포 브랜치)
 
-### Vercel
-- 프로젝트: `shell`
-- 배포 URL: `https://shell-steel.vercel.app/`
+### Vercel (현재 운영)
+- 프로젝트: `shell2`
+- 배포 URL: `https://shell2-phi.vercel.app/`
 - **Root Directory**: `teacher-platform`
 - Framework: **Vite**
 - Build Command: `npm run build`
@@ -71,7 +71,20 @@
 4. 설정이 꼬였으면 **프로젝트 삭제 → 다시 Import**
    - Import 시 Root Directory를 `teacher-platform`로 지정
 
-> 중요: `vercel.json`은 `teacher-platform/`에만 둡니다.
+> 중요: 루트(`shell/`)에는 `vercel.json`을 두지 않습니다.
+> Root Directory를 `teacher-platform`으로 고정하고, 설정은 Vercel 프로젝트에서 관리합니다.
+
+### 프로젝트 고정 규칙 (재발 방지)
+- 운영은 `shell2`만 사용합니다. (기존 `shell` 프로젝트는 사용하지 않음)
+- Root Directory 값은 **항상 `teacher-platform`으로 유지**합니다.
+- Framework/Build/Output 설정은 **Vite 기준으로만** 유지합니다.
+- 다른 프로젝트로 Import할 때는 **반드시 Root Directory를 지정**합니다.
+
+### 자주 발생하는 실패 원인
+- Root Directory 오타 또는 공백/슬래시 포함
+- Root Directory를 비우고 루트에서 빌드 시도
+- Framework를 Next.js로 변경
+- 루트에 `vercel.json`을 추가해 설정 충돌
 
 ---
 
@@ -114,3 +127,4 @@
 ## 변경 이력
 
 - 2026-02-01: 모노레포 Vite 기준 배포 규칙/CI 파이프라인 정리
+- 2026-02-01: Vercel 운영 프로젝트를 `shell2`로 고정 및 재발 방지 규칙 추가
