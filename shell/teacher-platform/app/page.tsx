@@ -1,107 +1,43 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import ToolGrid from '../components/features/ToolGrid';
-import type { Tool } from '../types';
+'use client';
 
-// 샘플 도구 데이터
-const sampleTools: Tool[] = [
-  {
-    id: 'tool_1',
-    name: '퀴즈 생성기',
-    description: '단원과 난이도에 맞는 퀴즈를 자동으로 생성합니다',
-    icon: '📝',
-    category: 'create',
-    version: '1.0',
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'tool_2',
-    name: '학습지 생성기',
-    description: '맞춤형 학습지를 빠르게 제작합니다',
-    icon: '📄',
-    category: 'create',
-    version: '1.0',
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'tool_3',
-    name: '성적 분석기',
-    description: '학생 성적을 분석하고 리포트를 생성합니다',
-    icon: '📊',
-    category: 'analyze',
-    version: '1.0',
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'tool_4',
-    name: '교안 작성 도우미',
-    description: 'AI가 교안 작성을 도와드립니다',
-    icon: '📚',
-    category: 'create',
-    version: '1.0',
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'tool_5',
-    name: '수업 자료 검색',
-    description: '수업에 필요한 자료를 빠르게 찾아드립니다',
-    icon: '🔍',
-    category: 'analyze',
-    version: '1.0',
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'tool_6',
-    name: 'QR 코드 생성기',
-    description: '수업 자료 링크를 QR 코드로 변환합니다',
-    icon: '📱',
-    category: 'create',
-    version: '1.0',
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'expected-questions-generator',
-    name: '예상 질문 리스트 만들기',
-    description: '학생들이 물어볼만한 예상 질문과 답변을 생성합니다',
-    icon: '❓',
-    category: 'create',
-    version: '1.0',
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import ToolGrid from '@/app/components/features/ToolGrid';
+import toolsConfig from '../tools-config.json';
 
 export default function Home() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [prompt, setPrompt] = useState('');
+
+  const tools = toolsConfig.tools.filter(tool => tool.enabled).map(tool => ({
+    id: tool.id,
+    name: tool.name,
+    description: tool.description,
+    icon: tool.icon,
+    category: tool.category as 'create' | 'analyze',
+    version: tool.version,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Submitted prompt:', prompt);
-    // TODO: AI 처리 로직 추가
   };
 
-  const handleToolClick = (tool: Tool) => {
-    navigate(`/tool/${tool.id}`);
+  const handleToolClick = (tool: any) => {
+    const toolConfig = toolsConfig.tools.find(t => t.id === tool.id);
+    if (toolConfig && toolConfig.isExternal) {
+      router.push(toolConfig.route);
+    } else {
+      router.push(`/tool/${tool.id}`);
+    }
   };
 
   return (
     <div className="min-h-screen p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Main Prompt Section */}
         <div className="mb-12">
           <h2 className="text-3xl font-bold text-gray-900 mb-6 text-center">
             무엇을 도와드릴까요?
@@ -143,7 +79,6 @@ export default function Home() {
           </form>
         </div>
 
-        {/* Tools Grid Section */}
         <div>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-2xl font-bold text-gray-900">추천 도구</h3>
@@ -155,7 +90,7 @@ export default function Home() {
             </a>
           </div>
 
-          <ToolGrid tools={sampleTools} onToolClick={handleToolClick} />
+          <ToolGrid tools={tools} onToolClick={handleToolClick} />
         </div>
       </div>
     </div>

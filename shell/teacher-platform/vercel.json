@@ -1,29 +1,3 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install",
-  "framework": "vite",
-  "rewrites": [
-    {
-      "source": "/tool/irisa-analyzer",
-      "destination": "https://irisa-analyzer.vercel.app"
-    },
-    {
-      "source": "/tool/irisa-analyzer/:path*",
-      "destination": "https://irisa-analyzer.vercel.app/:path*"
-    },
-    {
-      "source": "/api/analyze/:path*",
-      "destination": "https://irisa-analyzer.vercel.app/api/analyze/:path*"
-    },
-    {
-      "source": "/api/download/:path*",
-      "destination": "https://irisa-analyzer.vercel.app/api/download/:path*"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
+  "framework": "nextjs"
 }

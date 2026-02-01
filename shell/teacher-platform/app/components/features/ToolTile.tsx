@@ -1,4 +1,4 @@
-import type { Tool } from '../../types';
+import type { Tool } from '@/app/types-platform';
 import Card from '../common/Card';
 
 interface ToolTileProps {
