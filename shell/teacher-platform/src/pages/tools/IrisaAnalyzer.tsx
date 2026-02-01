@@ -98,7 +98,7 @@ const gradeOptions = (level: SchoolLevel) =>
   level === 'elementary' ? ['1', '2', '3', '4', '5', '6'] : ['1', '2', '3'];
 
 const requestAnalysis = async (input: InputData): Promise<AnalysisResult> => {
-  const apiBase = import.meta.env.VITE_IRISA_API_BASE || import.meta.env.VITE_API_BASE;
+  const apiBase = import.meta.env.VITE_IRISA_API_BASE || window.location.origin;
   if (!apiBase) {
     return createMockResult(input);
   }
@@ -131,7 +131,7 @@ const requestAnalysis = async (input: InputData): Promise<AnalysisResult> => {
 };
 
 const requestMappings = async (input: InputData): Promise<{ mappings: FileMapping[]; cost?: CostInfo } | FileMapping[]> => {
-  const apiBase = import.meta.env.VITE_IRISA_API_BASE || import.meta.env.VITE_API_BASE;
+  const apiBase = import.meta.env.VITE_IRISA_API_BASE || window.location.origin;
   if (!apiBase) {
     return input.mappings.map((m, idx) => ({
       ...m,
