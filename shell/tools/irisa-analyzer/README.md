@@ -18,7 +18,8 @@
 
 - **Frontend**: Vite + React 19 + TypeScript (TSX)
 - **Styling**: Tailwind CSS
-- **Backend (Mock)**: Node.js + Express
+- **Backend**: Node.js + Express
+- **AI**: OpenAI SDK (Responses API)
 - **DB 설계**: MySQL (schema 포함)
 
 ## 로컬 실행
@@ -27,44 +28,46 @@
 cd tools/irisa-analyzer
 npm install
 
-# 백엔드 목업 서버
+# 백엔드
 npm run dev:api
 
-# 프론트엔드
-npm run dev
+# 프론트 (teacher-platform)
+# .env에 VITE_IRISA_API_BASE 설정 후 실행
+```
+
+## 환경 변수
+
+```text
+VITE_IRISA_API_BASE=http://localhost:5174
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-4.1-mini
 ```
 
 ## 프로젝트 구조 (핵심만)
 
 ```
 irisa-analyzer/
-├── prompts/                 # 프롬프트 관리 (스펙 포인터)
-│   └── README.md
-├── server/                  # 백엔드 (목업)
+├── prompts/                 # 프롬프트 관리 (P1~P3)
+├── server/                  # 백엔드
 │   ├── index.js             # API 엔트리
-│   ├── routes/              # API 라우트 (설계)
-│   ├── services/            # 비즈니스 로직 (설계)
+│   ├── routes/              # API 라우트 설계
+│   ├── services/            # 비즈니스 로직 설계
 │   ├── storage/             # 업로드/분해/매핑 저장 구조
-│   │   └── README.md
 │   └── db/                  # MySQL 스키마
-│       ├── schema.sql
-│       └── README.md
-├── src/                     # 프론트엔드 (Vite)
-│   ├── components/          # 공통 컴포넌트
-│   ├── lib/                 # 목업/유틸
-│   ├── types/               # 타입 정의
-│   ├── IrisaAnalyzerPage.tsx
-│   ├── App.tsx
-│   └── main.tsx
-├── public/
 ├── package.json
 └── README.md
 ```
 
 ## 프롬프트 관리
 
-- 실제 프롬프트 스펙: `shell/tools/P1_prompt_spec.md`
-- 이 폴더(`prompts/`)는 버전 관리용 자리입니다.
+`prompts/` 폴더에 P1~P3 스펙이 있습니다.
+
+- `P1_prompt_spec.md`
+- `P1_prompt_spec_updated.md`
+- `P2_prompt_spec.md`
+- `P3_prompt_spec.md`
+
+백엔드는 위 파일들을 순서대로 묶어서 OpenAI에 전달합니다.
 
 ## 백엔드 데이터 저장 흐름 (개념)
 
@@ -74,7 +77,7 @@ irisa-analyzer/
 
 MySQL 테이블 구조는 `server/db/schema.sql` 참고.
 
-## API (목업)
+## API
 
 - `POST /api/analyze` : 분석 실행 (파일 + 입력 데이터)
 - `GET /api/download` : 결과 다운로드
@@ -88,8 +91,7 @@ MySQL 테이블 구조는 `server/db/schema.sql` 참고.
 ## 유지보수 가이드
 
 - `node_modules/`, `.next/` 등은 **로컬 산출물**이며 커밋하지 않습니다.
-- 공통 레이아웃/스타일은 **teacher-platform ToolExecutionLayout**에 맞추면 됩니다.
+- 공통 레이아웃/스타일은 **teacher-platform ToolExecutionLayout**에 맞춥니다.
 - 다른 플랫폼 이식 시:
-  - `src/`는 교체 가능한 UI 레이어
-  - `server/`는 독립 서비스로 분리 가능
   - `prompts/`와 `db/schema.sql`은 그대로 재사용 가능
+  - `server/`는 독립 서비스로 분리 가능

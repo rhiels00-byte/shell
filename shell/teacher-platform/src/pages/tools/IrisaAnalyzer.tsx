@@ -86,6 +86,39 @@ const fileIcon = (fileName: string) => {
   return '📎';
 };
 
+const requestAnalysis = async (input: InputData): Promise<AnalysisResult> => {
+  const apiBase = import.meta.env.VITE_IRISA_API_BASE || import.meta.env.VITE_API_BASE;
+  if (!apiBase) {
+    return createMockResult(input);
+  }
+
+  const formData = new FormData();
+  input.analysisFiles.forEach((file) => formData.append('analysisFiles', file));
+  input.referenceFiles.forEach((file) => formData.append('referenceFiles', file));
+
+  const payload = {
+    target: input.target,
+    level: input.level,
+    grade: input.grade,
+    students: input.students,
+    notes: input.notes,
+    mappings: input.mappings,
+  };
+
+  formData.append('payload', JSON.stringify(payload));
+
+  const response = await fetch(`${apiBase}/api/analyze`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error('API request failed');
+  }
+
+  return response.json();
+};
+
 export default function IrisaAnalyzer() {
   const [input, setInput] = useState<InputData>(defaultInput);
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -93,6 +126,7 @@ export default function IrisaAnalyzer() {
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]['id']>(
     'teacher'
   );
+  const [error, setError] = useState<string | null>(null);
 
   const analysisFileLabel = useMemo(
     () => toFileLabel(input.analysisFiles),
@@ -107,9 +141,16 @@ export default function IrisaAnalyzer() {
     setIsLoading(true);
     setResult(null);
     setActiveTab('teacher');
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setResult(createMockResult(input));
-    setIsLoading(false);
+    setError(null);
+    try {
+      const response = await requestAnalysis(input);
+      setResult(response);
+    } catch (err) {
+      setError('분석 요청에 실패했습니다. 목업 결과로 대체합니다.');
+      setResult(createMockResult(input));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSave = (type: 'download' | 'copy' | 'archive') => {
@@ -495,6 +536,12 @@ export default function IrisaAnalyzer() {
           />
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
       <Button onClick={handleAnalyze} disabled={isLoading} className="w-full">
         {isLoading ? '분석 생성 중...' : '분석 생성'}
