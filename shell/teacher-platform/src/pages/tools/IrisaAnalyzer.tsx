@@ -97,8 +97,17 @@ const fileIcon = (fileName: string) => {
 const gradeOptions = (level: SchoolLevel) =>
   level === 'elementary' ? ['1', '2', '3', '4', '5', '6'] : ['1', '2', '3'];
 
+const getApiBase = () => {
+  return import.meta.env.VITE_IRISA_API_BASE || window.location.origin;
+};
+
+const getApiPrefix = () => {
+  return import.meta.env.VITE_IRISA_API_PATH || '/api/irisa';
+};
+
 const requestAnalysis = async (input: InputData): Promise<AnalysisResult> => {
-  const apiBase = import.meta.env.VITE_IRISA_API_BASE || window.location.origin;
+  const apiBase = getApiBase();
+  const apiPrefix = getApiPrefix();
   if (!apiBase) {
     return createMockResult(input);
   }
@@ -118,7 +127,7 @@ const requestAnalysis = async (input: InputData): Promise<AnalysisResult> => {
 
   formData.append('payload', JSON.stringify(payload));
 
-  const response = await fetch(`${apiBase}/api/irisa/analyze`, {
+  const response = await fetch(`${apiBase}${apiPrefix}/analyze`, {
     method: 'POST',
     body: formData,
   });
@@ -131,7 +140,8 @@ const requestAnalysis = async (input: InputData): Promise<AnalysisResult> => {
 };
 
 const requestMappings = async (input: InputData): Promise<{ mappings: FileMapping[]; cost?: CostInfo } | FileMapping[]> => {
-  const apiBase = import.meta.env.VITE_IRISA_API_BASE || window.location.origin;
+  const apiBase = getApiBase();
+  const apiPrefix = getApiPrefix();
   if (!apiBase) {
     return input.mappings.map((m, idx) => ({
       ...m,
@@ -139,7 +149,7 @@ const requestMappings = async (input: InputData): Promise<{ mappings: FileMappin
     }));
   }
 
-  const response = await fetch(`${apiBase}/api/irisa/mappings`, {
+  const response = await fetch(`${apiBase}${apiPrefix}/mappings`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
