@@ -222,6 +222,13 @@ npm run build
 - `main` 브랜치에 push하면 자동 배포
 - PR 생성 시 미리보기 배포 자동 생성
 
+#### 배포 고정 규칙 (중요)
+- 운영 프로젝트는 **`shell2`**만 사용합니다.
+- Vercel Root Directory는 **항상 `teacher-platform`** 입니다.
+- Framework는 **Vite 고정**입니다. (Next.js로 변경 금지)
+- 루트(`shell/`)에는 `vercel.json`을 두지 않습니다.
+- 설정 변경 시 `teacher-platform/DEPLOYMENT_GUIDE.md`를 먼저 확인합니다.
+
 #### 수동 배포
 ```bash
 cd teacher-platform
@@ -282,6 +289,7 @@ ToolExecutionLayout 사용 시 필수 props:
 ### 문서
 - [PRD_교사지원플랫폼.md](PRD_교사지원플랫폼.md) - 전체 플랫폼 요구사항
 - [teacher-platform/README.md](teacher-platform/README.md) - 플랫폼 기술 문서
+- [teacher-platform/DEPLOYMENT_GUIDE.md](teacher-platform/DEPLOYMENT_GUIDE.md) - 배포 규칙/복구 절차
 - 각 도구의 `README.md` - 도구별 개발 가이드
 
 ## FAQ
@@ -315,4 +323,4 @@ ToolExecutionLayout 사용 시 필수 props:
 
 ---
 
-**마지막 업데이트**: 2026-01-30
+**마지막 업데이트**: 2026-02-01
