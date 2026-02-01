@@ -1,167 +1,116 @@
-# 배포 가이드 (Deployment Guide)
+# 배포 가이드 (Deployment + CI/CD Rules)
 
-## 현재 배포 상태
+## 목적
 
-### ✅ GitHub
-- **저장소**: https://github.com/rhiels00-byte/shell
-- **브랜치**: main
-- **상태**: 배포 완료
-
-### 🔄 Vercel
-- **프로젝트**: https://vercel.com/rhiels00-bytes-projects/shell
-- **자동 배포**: GitHub 연동 필요
+- `shell` 모노레포에서 **teacher-platform만 안정적으로 배포**하기 위한 규칙과 절차를 정의합니다.
+- 팀원 A/B/C(도구)와 팀원 D(새 서비스) 작업이 **배포 파이프라인에 영향**을 주지 않도록 분리합니다.
 
 ---
 
-## Vercel 배포 방법
+## 0) 핵심 규칙 (요약)
 
-### 방법 1: GitHub 자동 배포 (권장)
-
-1. **Vercel 대시보드 접속**
-   ```
-   https://vercel.com/rhiels00-bytes-projects
-   ```
-
-2. **Import Project 클릭**
-   - "Add New..." → "Project" 클릭
-   - 또는 직접 접속: https://vercel.com/new
-
-3. **GitHub 저장소 선택**
-   - "Import Git Repository" 섹션에서
-   - `rhiels00-byte/shell` 저장소 선택
-   - "Import" 버튼 클릭
-
-4. **프로젝트 설정 확인**
-   ```
-   Framework Preset: Vite (자동 감지됨)
-   Root Directory: ./
-   Build Command: npm run build
-   Output Directory: dist
-   Install Command: npm install
-   ```
-   - 설정은 `vercel.json`에 이미 정의되어 있으므로 그대로 진행
-
-5. **Deploy 버튼 클릭**
-   - 첫 배포가 자동으로 시작됩니다
-   - 약 1-2분 소요
-
-6. **배포 완료**
-   - 배포 URL 확인: `https://shell-xxxxx.vercel.app`
-   - 또는 커스텀 도메인 설정 가능
-
-### 방법 2: Vercel CLI 배포 (선택사항)
-
-CLI를 통해 수동으로 배포하려면:
-
-```bash
-# 1. Vercel 로그인 (브라우저 인증 필요)
-npx vercel login
-
-# 2. 프로젝트 링크
-npx vercel link
-
-# 3. 배포
-npx vercel --prod
-```
+1. **배포 대상은 `teacher-platform/` 하나**입니다. 다른 폴더 변경은 배포 실패 원인이 되어서는 안 됩니다.
+2. **Vercel 프로젝트 Root Directory는 `teacher-platform`로 고정**합니다.
+3. 프레임워크는 **Vite 고정**이며, 변경 시 반드시 문서/설정을 함께 업데이트합니다.
+4. `main` 브랜치로 들어가는 코드는 **CI 빌드 통과가 필수**입니다.
+5. 도구(teams A/B/C/D)는 **`tools/` 아래만 수정**하며, 플랫폼 관리자의 승인 없이 `teacher-platform/`에 직접 커밋하지 않습니다.
 
 ---
 
-## 자동 배포 설정 (CI/CD)
+## 1) 저장소/서비스 구조
 
-GitHub 저장소가 Vercel에 연결되면:
+### GitHub
+- 저장소: `https://github.com/rhiels00-byte/shell`
+- 브랜치: `main` (배포 브랜치)
 
-### 자동 배포 트리거
-- ✅ `main` 브랜치에 푸시 → **프로덕션 배포**
-- ✅ Pull Request 생성 → **프리뷰 배포**
-- ✅ 커밋 푸시 → **자동 재배포**
-
-### 환경 변수 설정 (필요시)
-Vercel 대시보드에서:
-1. Project Settings → Environment Variables
-2. 필요한 환경 변수 추가 (예: API 키)
-
----
-
-## 배포 확인 체크리스트
-
-### GitHub 배포 확인
-- [x] 코드가 GitHub에 푸시됨
-- [x] README.md 문서 업데이트됨
-- [x] vercel.json 설정 파일 포함됨
-
-### Vercel 배포 확인
-- [ ] GitHub 저장소 연결 완료
-- [ ] 첫 배포 성공
-- [ ] 배포 URL 접속 테스트
-- [ ] 라우팅 정상 작동 확인 (/tools, /settings 등)
+### Vercel
+- 프로젝트: `shell`
+- 배포 URL: `https://shell-steel.vercel.app/`
+- **Root Directory**: `teacher-platform`
+- Framework: **Vite**
+- Build Command: `npm run build`
+- Output Directory: `dist`
+- Install Command: `npm ci` (또는 `npm install`)
 
 ---
 
-## 배포 후 테스트 항목
+## 2) 폴더 책임 구분 (협업 규칙)
 
-배포가 완료되면 다음 항목을 테스트하세요:
+### 플랫폼 관리자 (1명)
+- 담당: `teacher-platform/`
+- 책임: 라우팅/공용 컴포넌트/레이아웃/배포 설정/`tools-config.json`
 
-1. **홈 페이지** (`/`)
-   - 프롬프트 입력창 표시
-   - 도구 타일 그리드 표시
-
-2. **도구 페이지** (`/tools`)
-   - 검색 기능 작동
-   - 카테고리 필터링 작동
-
-3. **채팅 내역** (`/chat-history`)
-   - 채팅 목록 표시
-   - 채팅 상세 내용 표시
-
-4. **만든 자료** (`/materials`)
-   - 자료 카드 표시
-   - 필터링 작동
-
-5. **설정** (`/settings`)
-   - 탭 전환 작동
-   - 폼 입력 정상
-
-6. **라우팅**
-   - 브라우저 새로고침 시 404 발생하지 않음
-   - 뒤로가기/앞으로가기 정상 작동
+### 도구 개발자 (A/B/C/D)
+- 담당: `tools/tool-*/` 또는 `tools/irisa-analyzer/`
+- 책임: 도구 내부 코드/문서/PRD
+- **금지**: `teacher-platform/` 직접 수정
 
 ---
 
-## 문제 해결
+## 3) 배포 파이프라인 (CI/CD 규칙)
 
-### 빌드 실패 시
-```bash
-# 로컬에서 빌드 테스트
-npm run build
+### CI (GitHub Actions)
+- 트리거: `main` push, PR
+- 작업: `teacher-platform/` 기준으로 **lint + build**
+- 실패 시: `main` 병합 금지
 
-# 빌드 결과 확인
-npm run preview
-```
-
-### 라우팅 문제 시
-- `vercel.json`의 rewrites 설정 확인
-- SPA 라우팅을 위해 모든 경로가 `/index.html`로 리다이렉트되어야 함
-
-### 스타일 미적용 시
-- Tailwind CSS 빌드 확인
-- `postcss.config.js` 설정 확인
-- `@tailwindcss/postcss` 패키지 설치 확인
+### CD (Vercel 자동 배포)
+- 트리거: `main` push
+- 동작: Vercel이 `teacher-platform/`에서 **Vite 빌드** 수행
 
 ---
 
-## 유용한 링크
+## 4) Vercel 연결/복구 절차 (자동 배포가 안 될 때)
 
-- **GitHub 저장소**: https://github.com/rhiels00-byte/shell
-- **Vercel 프로젝트**: https://vercel.com/rhiels00-bytes-projects/shell
-- **Vercel 문서**: https://vercel.com/docs
-- **Vite 배포 가이드**: https://vitejs.dev/guide/static-deploy.html
+1. Vercel 프로젝트 설정에서 **Root Directory = `teacher-platform`** 확인
+2. Framework Preset이 **Vite**인지 확인
+3. Build/Output/Install 설정이 아래와 같은지 확인
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+   - Install Command: `npm ci`
+4. 설정이 꼬였으면 **프로젝트 삭제 → 다시 Import**
+   - Import 시 Root Directory를 `teacher-platform`로 지정
+
+> 중요: `vercel.json`은 `teacher-platform/`에만 둡니다.
 
 ---
 
-## 다음 단계
+## 5) 변경 규칙 (프레임워크/구조 변경 시)
 
-배포 후:
-1. ✅ 커스텀 도메인 연결 (선택사항)
-2. ✅ 환경 변수 설정 (Phase 2에서 필요)
-3. ✅ 성능 모니터링 설정
-4. ✅ Analytics 설정 (Vercel Analytics)
+다음 변경은 **사전 합의 + 문서 업데이트**가 필요합니다.
+
+- Vite → Next.js 등 프레임워크 변경
+- `teacher-platform/` 위치 변경
+- 루트 디렉터리 변경
+- `vercel.json` 위치 변경
+
+변경 시 반드시 다음 문서 갱신:
+- `teacher-platform/DEPLOYMENT_GUIDE.md`
+- `teacher-platform/README.md`
+
+---
+
+## 6) 체크리스트
+
+### 배포 전
+- [ ] `teacher-platform/`에서 `npm run lint` 통과
+- [ ] `teacher-platform/`에서 `npm run build` 통과
+- [ ] `tools-config.json` 변경 시 라우팅 확인
+
+### 배포 후
+- [ ] 홈(`/`) 로딩
+- [ ] 도구 목록(`/tools`) 로딩
+- [ ] 도구 실행 라우트(`/tool/*`) 404 없음
+
+---
+
+## 7) 롤백 규칙
+
+- `main`에서 마지막 정상 커밋으로 되돌리고 push
+- Vercel은 자동으로 이전 커밋 기준 재배포
+
+---
+
+## 변경 이력
+
+- 2026-02-01: 모노레포 Vite 기준 배포 규칙/CI 파이프라인 정리
