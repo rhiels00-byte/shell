@@ -41,7 +41,7 @@ interface AnalysisResult {
 const defaultInput: InputData = {
   target: 'single',
   level: 'elementary',
-  grade: '',
+  grade: '1',
   students: [{ name: '', number: '' }],
   notes: '',
   analysisFiles: [],
@@ -86,6 +86,9 @@ const fileIcon = (fileName: string) => {
   return '📎';
 };
 
+const gradeOptions = (level: SchoolLevel) =>
+  level === 'elementary' ? ['1', '2', '3', '4', '5', '6'] : ['1', '2', '3'];
+
 const requestAnalysis = async (input: InputData): Promise<AnalysisResult> => {
   const apiBase = import.meta.env.VITE_IRISA_API_BASE || import.meta.env.VITE_API_BASE;
   if (!apiBase) {
@@ -119,6 +122,35 @@ const requestAnalysis = async (input: InputData): Promise<AnalysisResult> => {
   return response.json();
 };
 
+const requestMappings = async (input: InputData): Promise<FileMapping[]> => {
+  const apiBase = import.meta.env.VITE_IRISA_API_BASE || import.meta.env.VITE_API_BASE;
+  if (!apiBase) {
+    return input.mappings.map((m, idx) => ({
+      ...m,
+      studentIndex: input.target === 'single' ? 0 : m.studentIndex ?? idx % input.students.length,
+    }));
+  }
+
+  const response = await fetch(`${apiBase}/api/mappings`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      students: input.students,
+      files: input.analysisFiles.map((file) => ({
+        name: file.name,
+        size: file.size,
+        lastModified: file.lastModified,
+      })),
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Mapping request failed');
+  }
+
+  return response.json();
+};
+
 export default function IrisaAnalyzer() {
   const [input, setInput] = useState<InputData>(defaultInput);
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -127,6 +159,7 @@ export default function IrisaAnalyzer() {
     'teacher'
   );
   const [error, setError] = useState<string | null>(null);
+  const [mappingLoading, setMappingLoading] = useState(false);
 
   const analysisFileLabel = useMemo(
     () => toFileLabel(input.analysisFiles),
@@ -150,6 +183,19 @@ export default function IrisaAnalyzer() {
       setResult(createMockResult(input));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDetectMappings = async () => {
+    setMappingLoading(true);
+    setError(null);
+    try {
+      const mappings = await requestMappings(input);
+      setInput({ ...input, mappings });
+    } catch (err) {
+      setError('매핑 자동 감지에 실패했습니다. 수동으로 확인해 주세요.');
+    } finally {
+      setMappingLoading(false);
     }
   };
 
@@ -247,8 +293,7 @@ export default function IrisaAnalyzer() {
   const InputComponent = (
     <div className="space-y-8">
       <div>
-        <div className="text-lg font-semibold text-gray-900 mb-4">정보 입력</div>
-        <div className="space-y-6 rounded-lg border border-gray-200 bg-white p-5">
+        <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-5 shadow-sm space-y-6">
           <div>
             <div className="text-sm font-semibold text-gray-900 mb-3">
               학생 인원 수
@@ -295,19 +340,28 @@ export default function IrisaAnalyzer() {
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 focus:outline-none"
                 value={input.level}
                 onChange={(e) =>
-                  setInput({ ...input, level: e.target.value as SchoolLevel })
+                  setInput({
+                    ...input,
+                    level: e.target.value as SchoolLevel,
+                    grade: '1',
+                  })
                 }
               >
                 <option value="elementary">초등</option>
                 <option value="middle">중등</option>
                 <option value="high">고등</option>
               </select>
-              <input
+              <select
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 focus:outline-none"
-                placeholder="학년 (예: 5학년)"
                 value={input.grade}
                 onChange={(e) => setInput({ ...input, grade: e.target.value })}
-              />
+              >
+                {gradeOptions(input.level).map((grade) => (
+                  <option key={grade} value={grade}>
+                    {grade}학년
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -380,8 +434,7 @@ export default function IrisaAnalyzer() {
       </div>
 
       <div>
-        <div className="text-lg font-semibold text-gray-900 mb-4">파일 업로드</div>
-        <div className="space-y-6 rounded-lg border border-gray-200 bg-white p-5">
+        <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-5 shadow-sm space-y-6">
           <div>
             <div className="text-sm font-semibold text-gray-900 mb-3">
               분석 자료 업로드 (필수)
@@ -416,9 +469,6 @@ export default function IrisaAnalyzer() {
                 </div>
               ))}
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              파일은 누적됩니다. 다시 선택하면 기존 파일에 추가됩니다.
-            </p>
           </div>
 
           <div>
@@ -457,12 +507,21 @@ export default function IrisaAnalyzer() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700">
-            파일과 학생 매핑을 최소 입력으로 확인하는 단계입니다. (목업)
-          </div>
-
           <div className="space-y-3">
-            <div className="text-sm font-semibold text-gray-900">자료-학생 매핑 확인</div>
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-semibold text-gray-900">자료-학생 매핑 확인</div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleDetectMappings}
+                disabled={mappingLoading || input.analysisFiles.length === 0}
+              >
+                {mappingLoading ? '자동 감지 중...' : '파일 업로드 완료'}
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500">
+              등록한 학생과, 파일이 잘 매핑이 되었는지 확인해 주세요! *파일명에 학생 이름이 있으면 더 잘 인식됩니다
+            </p>
             {input.analysisFiles.length === 0 ? (
               <div className="text-sm text-gray-500">분석 자료를 업로드하면 매핑이 표시됩니다.</div>
             ) : (
@@ -474,7 +533,7 @@ export default function IrisaAnalyzer() {
                   >
                     <div className="flex items-center justify-between text-sm font-medium text-gray-800">
                       <span>{mapping.fileName}</span>
-                      <span className="text-xs text-gray-400">자동 감지됨 (목업)</span>
+                      <span className="text-xs text-gray-400">자동 감지됨</span>
                     </div>
                     <div className="mt-3 grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr] gap-3">
                       <select
@@ -525,8 +584,8 @@ export default function IrisaAnalyzer() {
       </div>
 
       <div>
-        <div className="text-lg font-semibold text-gray-900 mb-4">추가 메모</div>
-        <div className="rounded-lg border border-gray-200 bg-white p-5">
+        <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-5 shadow-sm">
+          <div className="text-sm font-semibold text-gray-900 mb-3">추가 메모</div>
           <textarea
             className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 focus:outline-none resize-none"
             rows={4}

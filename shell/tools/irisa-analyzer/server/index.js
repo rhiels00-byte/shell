@@ -78,6 +78,68 @@ const mockResponse = ({ payload, analysisFiles, referenceFiles }) => ({
   generatedAt: new Date().toISOString(),
 });
 
+const heuristicMappings = ({ students, files }) => {
+  if (!files || files.length === 0) return [];
+  const studentNames = (students || []).map((s) => s.name).filter(Boolean);
+
+  return files.map((file, idx) => {
+    let studentIndex = null;
+    if (studentNames.length === 1) {
+      studentIndex = 0;
+    } else if (studentNames.length > 1) {
+      const nameMatchIndex = studentNames.findIndex((name) =>
+        file.name.includes(name)
+      );
+      studentIndex = nameMatchIndex >= 0 ? nameMatchIndex : idx % studentNames.length;
+    }
+
+    const fileId = `${file.name}-${file.size || 0}-${file.lastModified || 0}`;
+    return {
+      fileId,
+      fileName: file.name,
+      studentIndex,
+      unit: '전체',
+      range: '전체',
+    };
+  });
+};
+
+app.post('/api/mappings', async (req, res) => {
+  const { students, files } = req.body || {};
+
+  if (!client) {
+    return res.json(heuristicMappings({ students, files }));
+  }
+
+  const promptBundle = loadPromptBundle();
+  const mappingPrompt = `너는 업로드된 파일과 학생 정보를 보고 자동 매핑을 생성한다.\n반드시 JSON 배열만 출력한다.\n각 항목 형식: {"fileId": string, "fileName": string, "studentIndex": number|null, "unit": "전체"|"페이지"|"구간"|"행/표", "range": string}`;
+
+  try {
+    const response = await client.responses.create({
+      model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
+      input: [
+        { role: 'system', content: promptBundle + '\n\n' + mappingPrompt },
+        {
+          role: 'user',
+          content: JSON.stringify({ students, files }, null, 2),
+        },
+      ],
+    });
+
+    const text = response.output_text || '';
+    const parsed = JSON.parse(text);
+
+    if (!Array.isArray(parsed)) {
+      return res.json(heuristicMappings({ students, files }));
+    }
+
+    return res.json(parsed);
+  } catch (error) {
+    console.error(error);
+    return res.json(heuristicMappings({ students, files }));
+  }
+});
+
 app.post(
   '/api/analyze',
   upload.fields([
