@@ -95,6 +95,29 @@ const mockResponse = ({ payload, analysisFiles, referenceFiles }) => ({
   generatedAt: new Date().toISOString(),
 });
 
+const safeJsonParse = (text) => {
+  if (!text) return null;
+  const trimmed = text.trim();
+  const fenced =
+    trimmed.match(/```json([\s\S]*?)```/i) || trimmed.match(/```([\s\S]*?)```/);
+  const candidate = fenced ? fenced[1].trim() : trimmed;
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    const start = candidate.indexOf('{');
+    const end = candidate.lastIndexOf('}');
+    if (start >= 0 && end > start) {
+      const sliced = candidate.slice(start, end + 1);
+      try {
+        return JSON.parse(sliced);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+};
+
 const heuristicMappings = ({ students, files }) => {
   if (!files || files.length === 0) return [];
   const studentNames = (students || []).map((s) => s.name).filter(Boolean);
@@ -145,7 +168,7 @@ app.post('/api/mappings', async (req, res) => {
     });
 
     const text = response.output_text || '';
-    const parsed = JSON.parse(text);
+    const parsed = safeJsonParse(text);
     const cost = estimateCost({ model, usage: response.usage });
 
     if (!Array.isArray(parsed)) {
@@ -200,13 +223,13 @@ app.post(
       });
 
       const text = response.output_text || '';
-      const parsed = JSON.parse(text);
+      const parsed = safeJsonParse(text);
 
       const cost = estimateCost({ model, usage: response.usage });
       return res.json({
-        teacherSummary: parsed.teacherSummary ?? '',
-        studentSummary: parsed.studentSummary ?? '',
-        recordGuide: parsed.recordGuide ?? '',
+        teacherSummary: parsed?.teacherSummary ?? '',
+        studentSummary: parsed?.studentSummary ?? '',
+        recordGuide: parsed?.recordGuide ?? '',
         generatedAt: new Date().toISOString(),
         cost,
       });
