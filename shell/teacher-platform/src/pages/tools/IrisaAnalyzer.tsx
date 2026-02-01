@@ -5,9 +5,19 @@ import ToolExecutionLayout from '../../components/layout/ToolExecutionLayout';
 type AnalysisTarget = 'single' | 'multiple';
 type SchoolLevel = 'elementary' | 'middle' | 'high';
 
+type MappingUnit = '전체' | '페이지' | '구간' | '행/표';
+
 interface StudentEntry {
   name: string;
   number: string;
+}
+
+interface FileMapping {
+  fileId: string;
+  fileName: string;
+  studentIndex: number | null;
+  unit: MappingUnit;
+  range: string;
 }
 
 interface InputData {
@@ -18,6 +28,7 @@ interface InputData {
   notes: string;
   analysisFiles: File[];
   referenceFiles: File[];
+  mappings: FileMapping[];
 }
 
 interface AnalysisResult {
@@ -35,6 +46,7 @@ const defaultInput: InputData = {
   notes: '',
   analysisFiles: [],
   referenceFiles: [],
+  mappings: [],
 };
 
 const tabs = [
@@ -56,6 +68,22 @@ const toFileLabel = (files: File[]) => {
   if (files.length === 0) return '선택된 파일 없음';
   if (files.length === 1) return files[0].name;
   return `${files.length}개 파일 선택됨`;
+};
+
+const formatFileSize = (bytes: number) => {
+  if (bytes === 0) return '0B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const idx = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  return `${(bytes / 1024 ** idx).toFixed(idx === 0 ? 0 : 1)}${units[idx]}`;
+};
+
+const fileIcon = (fileName: string) => {
+  const lower = fileName.toLowerCase();
+  if (lower.endsWith('.pdf')) return '📄';
+  if (lower.match(/\.(png|jpg|jpeg|gif|webp)$/)) return '🖼️';
+  if (lower.match(/\.(mp4|mov|avi|mkv)$/)) return '🎥';
+  if (lower.match(/\.(xls|xlsx|csv)$/)) return '📊';
+  return '📎';
 };
 
 export default function IrisaAnalyzer() {
@@ -133,15 +161,47 @@ export default function IrisaAnalyzer() {
 
   const appendFiles = (key: 'analysisFiles' | 'referenceFiles', files: File[]) => {
     if (files.length === 0) return;
+    const merged = [...input[key], ...files];
+    const nextMappings =
+      key === 'analysisFiles'
+        ? merged.map((file) => {
+            const id = `${file.name}-${file.size}-${file.lastModified}`;
+            const existing = input.mappings.find((m) => m.fileId === id);
+            return (
+              existing ?? {
+                fileId: id,
+                fileName: file.name,
+                studentIndex: input.target === 'single' ? 0 : null,
+                unit: '전체',
+                range: '전체',
+              }
+            );
+          })
+        : input.mappings;
+
     setInput({
       ...input,
-      [key]: [...input[key], ...files],
+      [key]: merged,
+      mappings: nextMappings,
     });
   };
 
   const removeFile = (key: 'analysisFiles' | 'referenceFiles', index: number) => {
     const next = input[key].filter((_, idx) => idx !== index);
-    setInput({ ...input, [key]: next });
+    const nextMappings =
+      key === 'analysisFiles'
+        ? input.mappings.filter((mapping) => mapping.fileName !== input[key][index]?.name)
+        : input.mappings;
+    setInput({ ...input, [key]: next, mappings: nextMappings });
+  };
+
+  const updateMapping = (fileId: string, patch: Partial<FileMapping>) => {
+    setInput({
+      ...input,
+      mappings: input.mappings.map((mapping) =>
+        mapping.fileId === fileId ? { ...mapping, ...patch } : mapping
+      ),
+    });
   };
 
   const InputComponent = (
@@ -173,6 +233,10 @@ export default function IrisaAnalyzer() {
                           : input.students.length === 0
                           ? [{ name: '', number: '' }]
                           : input.students,
+                      mappings:
+                        option.id === 'single'
+                          ? input.mappings.map((m) => ({ ...m, studentIndex: 0 }))
+                          : input.mappings,
                     })
                   }
                 >
@@ -208,32 +272,54 @@ export default function IrisaAnalyzer() {
           </div>
 
           <div>
-            <div className="text-sm font-semibold text-gray-900 mb-3">
-              학생 기본 정보
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-sm font-semibold text-gray-900">학생 기본 정보</div>
+              {input.target === 'multiple' && (
+                <Button type="button" variant="outline" size="sm" onClick={addStudent}>
+                  + 학생 추가
+                </Button>
+              )}
             </div>
-            <div className="space-y-3">
-              {input.students.map((student, index) => (
-                <div
-                  key={`${index}-${input.target}`}
-                  className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3 items-center"
-                >
-                  <input
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 focus:outline-none"
-                    placeholder="학생 이름"
-                    value={student.name}
-                    onChange={(e) =>
-                      setStudent(index, { name: e.target.value })
-                    }
-                  />
-                  <input
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 focus:outline-none"
-                    placeholder="학생 순번 또는 번호"
-                    value={student.number}
-                    onChange={(e) =>
-                      setStudent(index, { number: e.target.value })
-                    }
-                  />
-                  {input.target === 'multiple' ? (
+
+            {input.target === 'single' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 focus:outline-none"
+                  placeholder="학생 이름"
+                  value={input.students[0]?.name ?? ''}
+                  onChange={(e) => setStudent(0, { name: e.target.value })}
+                />
+                <input
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 focus:outline-none"
+                  placeholder="학생 순번 또는 번호"
+                  value={input.students[0]?.number ?? ''}
+                  onChange={(e) => setStudent(0, { number: e.target.value })}
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="grid grid-cols-[1fr_1fr_72px] gap-3 text-xs text-gray-500">
+                  <div>학생 이름</div>
+                  <div>학생 번호</div>
+                  <div></div>
+                </div>
+                {input.students.map((student, index) => (
+                  <div
+                    key={`${index}-${input.target}`}
+                    className="grid grid-cols-[1fr_1fr_72px] gap-3 items-center"
+                  >
+                    <input
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 focus:outline-none"
+                      placeholder={`학생 ${index + 1} 이름`}
+                      value={student.name}
+                      onChange={(e) => setStudent(index, { name: e.target.value })}
+                    />
+                    <input
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 focus:outline-none"
+                      placeholder="번호"
+                      value={student.number}
+                      onChange={(e) => setStudent(index, { number: e.target.value })}
+                    />
                     <Button
                       type="button"
                       variant="outline"
@@ -242,19 +328,13 @@ export default function IrisaAnalyzer() {
                     >
                       삭제
                     </Button>
-                  ) : null}
-                </div>
-              ))}
-
-              {input.target === 'multiple' && (
-                <Button type="button" variant="outline" size="sm" onClick={addStudent}>
-                  + 학생 추가
-                </Button>
-              )}
-              <p className="text-xs text-gray-500">
-                학생 여러 명 분석 시 이름/번호만 입력하면 됩니다. 학년/학교급은 공통입니다.
-              </p>
-            </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-gray-500 mt-2">
+              학생 여러 명 분석 시 이름/번호만 입력하면 됩니다. 학년/학교급은 공통입니다.
+            </p>
           </div>
         </div>
       </div>
@@ -281,7 +361,11 @@ export default function IrisaAnalyzer() {
                   key={`${file.name}-${idx}`}
                   className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 text-sm"
                 >
-                  <span className="text-gray-700">{file.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span>{fileIcon(file.name)}</span>
+                    <span className="text-gray-700">{file.name}</span>
+                    <span className="text-xs text-gray-400">({formatFileSize(file.size)})</span>
+                  </div>
                   <button
                     type="button"
                     onClick={() => removeFile('analysisFiles', idx)}
@@ -316,7 +400,11 @@ export default function IrisaAnalyzer() {
                   key={`${file.name}-${idx}`}
                   className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 text-sm"
                 >
-                  <span className="text-gray-700">{file.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span>{fileIcon(file.name)}</span>
+                    <span className="text-gray-700">{file.name}</span>
+                    <span className="text-xs text-gray-400">({formatFileSize(file.size)})</span>
+                  </div>
                   <button
                     type="button"
                     onClick={() => removeFile('referenceFiles', idx)}
@@ -327,6 +415,71 @@ export default function IrisaAnalyzer() {
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700">
+            파일과 학생 매핑을 최소 입력으로 확인하는 단계입니다. (목업)
+          </div>
+
+          <div className="space-y-3">
+            <div className="text-sm font-semibold text-gray-900">자료-학생 매핑 확인</div>
+            {input.analysisFiles.length === 0 ? (
+              <div className="text-sm text-gray-500">분석 자료를 업로드하면 매핑이 표시됩니다.</div>
+            ) : (
+              <div className="space-y-3">
+                {input.mappings.map((mapping) => (
+                  <div
+                    key={mapping.fileId}
+                    className="rounded-lg border border-gray-200 bg-white p-4"
+                  >
+                    <div className="flex items-center justify-between text-sm font-medium text-gray-800">
+                      <span>{mapping.fileName}</span>
+                      <span className="text-xs text-gray-400">자동 감지됨 (목업)</span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr] gap-3">
+                      <select
+                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 focus:outline-none text-sm"
+                        value={mapping.studentIndex ?? ''}
+                        onChange={(e) =>
+                          updateMapping(mapping.fileId, {
+                            studentIndex: e.target.value === '' ? null : Number(e.target.value),
+                          })
+                        }
+                      >
+                        <option value="">학생 선택</option>
+                        {input.students.map((student, idx) => (
+                          <option key={`${student.name}-${idx}`} value={idx}>
+                            {student.name || `학생 ${idx + 1}`} {student.number ? `(${student.number})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 focus:outline-none text-sm"
+                        value={mapping.unit}
+                        onChange={(e) =>
+                          updateMapping(mapping.fileId, {
+                            unit: e.target.value as MappingUnit,
+                          })
+                        }
+                      >
+                        <option value="전체">전체</option>
+                        <option value="페이지">페이지</option>
+                        <option value="구간">구간</option>
+                        <option value="행/표">행/표</option>
+                      </select>
+                      <input
+                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 focus:outline-none text-sm"
+                        placeholder="예: p.1-3, 00:30-02:10"
+                        value={mapping.range}
+                        onChange={(e) =>
+                          updateMapping(mapping.fileId, { range: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
