@@ -118,7 +118,7 @@ const requestAnalysis = async (input: InputData): Promise<AnalysisResult> => {
 
   formData.append('payload', JSON.stringify(payload));
 
-  const response = await fetch(`${apiBase}/api/analyze`, {
+  const response = await fetch(`${apiBase}/api/irisa/analyze`, {
     method: 'POST',
     body: formData,
   });
@@ -139,7 +139,7 @@ const requestMappings = async (input: InputData): Promise<{ mappings: FileMappin
     }));
   }
 
-  const response = await fetch(`${apiBase}/api/mappings`, {
+  const response = await fetch(`${apiBase}/api/irisa/mappings`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
