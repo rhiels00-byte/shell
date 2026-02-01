@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd teacher-platform && npm run build",
+  "outputDirectory": "teacher-platform/dist",
+  "installCommand": "cd teacher-platform && npm install",
+  "framework": "vite"
+}
