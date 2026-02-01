@@ -39,6 +39,18 @@
       "path": "../tools/tool-worksheet-generator",
       "component": "WorksheetGenerator",
       "route": "/tool/worksheet-generator"
+    },
+    {
+      "id": "irisa-analyzer",
+      "name": "이리사 종합 분석기",
+      "description": "수업 산출물을 종합 분석하여 학생별 맞춤 피드백과 생기부 작성을 지원합니다",
+      "icon": "📊",
+      "category": "analyze",
+      "version": "2.0.0",
+      "author": "팀원D",
+      "enabled": true,
+      "externalUrl": "https://irisa-analyzer.vercel.app",
+      "openInNewTab": true
     }
   ]
 }
