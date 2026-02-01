@@ -5,7 +5,8 @@ AI를 활용하여 교사가 원하는 산출물을 빠르고 정확하게 제�
 ## 배포 링크
 
 - **GitHub**: [https://github.com/rhiels00-byte/shell](https://github.com/rhiels00-byte/shell)
-- **Vercel**: [https://vercel.com/rhiels00-bytes-projects/shell](https://vercel.com/rhiels00-bytes-projects/shell)
+- **Vercel**: [https://vercel.com/rhiels00-bytes-projects/shell2](https://vercel.com/rhiels00-bytes-projects/shell2)
+- **배포 URL**: [https://shell2-phi.vercel.app/](https://shell2-phi.vercel.app/)
 - **배포 가이드**: [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
 
 ## 프로젝트 개요
