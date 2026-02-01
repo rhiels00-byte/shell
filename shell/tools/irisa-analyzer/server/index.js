@@ -118,6 +118,32 @@ const safeJsonParse = (text) => {
   }
 };
 
+const getResponseText = (response) => {
+  if (!response) return '';
+  if (response.output_text) return response.output_text;
+  if (Array.isArray(response.output)) {
+    const parts = [];
+    for (const item of response.output) {
+      const content = item?.content || [];
+      for (const node of content) {
+        if (node?.type === 'output_text' || node?.type === 'text') {
+          parts.push(node?.text || '');
+        }
+      }
+    }
+    return parts.join('\n').trim();
+  }
+  return '';
+};
+
+const normalizeAnalysis = (parsed, fallback) => {
+  if (!parsed || typeof parsed !== 'object') return fallback;
+  const teacherSummary = parsed.teacherSummary || fallback.teacherSummary;
+  const studentSummary = parsed.studentSummary || fallback.studentSummary;
+  const recordGuide = parsed.recordGuide || fallback.recordGuide;
+  return { ...fallback, teacherSummary, studentSummary, recordGuide };
+};
+
 const heuristicMappings = ({ students, files }) => {
   if (!files || files.length === 0) return [];
   const studentNames = (students || []).map((s) => s.name).filter(Boolean);
@@ -158,6 +184,7 @@ app.post('/api/mappings', async (req, res) => {
     const model = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
     const response = await client.responses.create({
       model,
+      text: { format: { type: 'json_object' } },
       input: [
         { role: 'system', content: promptBundle + '\n\n' + mappingPrompt },
         {
@@ -167,7 +194,7 @@ app.post('/api/mappings', async (req, res) => {
       ],
     });
 
-    const text = response.output_text || '';
+    const text = getResponseText(response);
     const parsed = safeJsonParse(text);
     const cost = estimateCost({ model, usage: response.usage });
 
@@ -204,12 +231,13 @@ app.post(
       const model = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
       const response = await client.responses.create({
         model,
+        text: { format: { type: 'json_object' } },
         input: [
           {
             role: 'system',
             content:
               promptBundle +
-              '\n\n너는 교사용 분석 결과, 학생/학부모용 분석, 생기부 가이드를 JSON으로만 반환한다.',
+              '\n\n반드시 JSON 객체만 반환한다. 키는 teacherSummary, studentSummary, recordGuide이다.',
           },
           {
             role: 'user',
@@ -222,14 +250,16 @@ app.post(
         ],
       });
 
-      const text = response.output_text || '';
+      const text = getResponseText(response);
       const parsed = safeJsonParse(text);
 
       const cost = estimateCost({ model, usage: response.usage });
+      const normalized = normalizeAnalysis(
+        parsed,
+        mockResponse({ payload, analysisFiles, referenceFiles })
+      );
       return res.json({
-        teacherSummary: parsed?.teacherSummary ?? '',
-        studentSummary: parsed?.studentSummary ?? '',
-        recordGuide: parsed?.recordGuide ?? '',
+        ...normalized,
         generatedAt: new Date().toISOString(),
         cost,
       });
