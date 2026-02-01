@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ToolExecution from './pages/ToolExecution';
 import ExpectedQuestionsGenerator from './pages/tools/ExpectedQuestionsGenerator';
+import IrisaAnalyzerPage from '@irisa/IrisaAnalyzerPage';
 
 function App() {
   // TODO: 실제 인증 상태 관리는 Context 또는 상태 관리 라이브러리 사용
@@ -26,6 +27,12 @@ function App() {
           path="/tool/expected-questions-generator"
           element={
             isAuthenticated ? <ExpectedQuestionsGenerator /> : <Navigate to="/login" />
+          }
+        />
+        <Route
+          path="/tool/irisa-analyzer"
+          element={
+            isAuthenticated ? <IrisaAnalyzerPage /> : <Navigate to="/login" />
           }
         />
         <Route

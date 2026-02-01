@@ -49,8 +49,9 @@
       "version": "2.0.0",
       "author": "팀원D",
       "enabled": true,
-      "route": "/tool/irisa-analyzer",
-      "isExternal": true
+      "path": "../tools/irisa-analyzer",
+      "component": "IrisaAnalyzerPage",
+      "route": "/tool/irisa-analyzer"
     }
   ]
 }

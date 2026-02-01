@@ -72,6 +72,17 @@ const sampleTools: Tool[] = [
     updatedAt: new Date(),
   },
   {
+    id: 'irisa-analyzer',
+    name: '이리사 종합 분석기',
+    description: '수업 산출물을 종합 분석해 상담/생기부 인사이트를 제공합니다',
+    icon: '📈',
+    category: 'analyze',
+    version: '2.0',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
     id: 'expected-questions-generator',
     name: '예상 질문 리스트 만들기',
     description: '학생들이 물어볼만한 예상 질문과 답변을 생성합니다',
