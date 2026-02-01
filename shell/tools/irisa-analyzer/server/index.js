@@ -37,20 +37,18 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
 const promptRoot = path.resolve(process.cwd(), 'prompts');
-const promptFiles = [
-  'P1_prompt_spec.md',
-  'P2_prompt_spec.md',
-  'P3_prompt_spec.md',
-];
+const promptMap = {
+  p1: 'P1_prompt_spec.md',
+  p2: 'P2_prompt_spec.md',
+  p3: 'P3_prompt_spec.md',
+};
 
-const loadPromptBundle = () => {
-  return promptFiles
-    .map((file) => {
-      const filePath = path.join(promptRoot, file);
-      if (!fs.existsSync(filePath)) return `# Missing: ${file}`;
-      return fs.readFileSync(filePath, 'utf-8');
-    })
-    .join('\n\n');
+const getPrompt = (type) => {
+  const fileName = promptMap[type];
+  if (!fileName) return '';
+  const filePath = path.join(promptRoot, fileName);
+  if (!fs.existsSync(filePath)) return '';
+  return fs.readFileSync(filePath, 'utf-8');
 };
 
 const client = process.env.OPENAI_API_KEY ? new OpenAI() : null;
@@ -177,7 +175,7 @@ app.post('/api/mappings', async (req, res) => {
     return res.json({ mappings: heuristicMappings({ students, files }), cost: { usd: 0, inputTokens: 0, outputTokens: 0, model: 'mock' } });
   }
 
-  const promptBundle = loadPromptBundle();
+  const promptBundle = getPrompt('p2') || getPrompt('p1');
   const mappingPrompt = `너는 업로드된 파일과 학생 정보를 보고 자동 매핑을 생성한다.\n반드시 JSON 배열만 출력한다.\n각 항목 형식: {"fileId": string, "fileName": string, "studentIndex": number|null, "unit": "전체"|"페이지"|"구간"|"행/표", "range": string}`;
 
   try {
@@ -236,7 +234,7 @@ app.post(
           {
             role: 'system',
             content:
-              promptBundle +
+              getPrompt('p1') +
               '\n\n반드시 JSON 객체만 반환한다. 키는 teacherSummary, studentSummary, recordGuide이다.',
           },
           {
