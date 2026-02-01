@@ -162,20 +162,19 @@ export default function IrisaAnalyzer() {
   const appendFiles = (key: 'analysisFiles' | 'referenceFiles', files: File[]) => {
     if (files.length === 0) return;
     const merged = [...input[key], ...files];
-    const nextMappings =
+    const nextMappings: FileMapping[] =
       key === 'analysisFiles'
         ? merged.map((file) => {
             const id = `${file.name}-${file.size}-${file.lastModified}`;
             const existing = input.mappings.find((m) => m.fileId === id);
-            return (
-              existing ?? {
-                fileId: id,
-                fileName: file.name,
-                studentIndex: input.target === 'single' ? 0 : null,
-                unit: '전체',
-                range: '전체',
-              }
-            );
+            if (existing) return existing;
+            return {
+              fileId: id,
+              fileName: file.name,
+              studentIndex: input.target === 'single' ? 0 : null,
+              unit: '전체' as MappingUnit,
+              range: '전체',
+            };
           })
         : input.mappings;
 
